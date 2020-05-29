@@ -151,7 +151,7 @@ def main():
         # generate SimpleITK displacement field and calculate TRE
         tmp_displacement = al.transformation.utils.upsample_displacement(current_displacement.clone().to(device='cpu'),
                                                                          m_image.size, interpolation="linear")
-        tmp_displacement = al.transformation.utils.unit_displacement_to_dispalcement(tmp_displacement)  # unit measures to image domain measures
+        tmp_displacement = al.transformation.utils.unit_displacement_to_displacement(tmp_displacement)  # unit measures to image domain measures
         tmp_displacement = al.create_displacement_image_from_image(tmp_displacement, m_image)
         tmp_displacement.write('/tmp/bspline_displacement_image_level_'+str(level)+'.vtk')
 
@@ -162,7 +162,7 @@ def main():
     # create final result
     displacement = transformation.get_displacement()
     warped_image = al.transformation.utils.warp_image(m_image, displacement)
-    displacement = al.transformation.utils.unit_displacement_to_dispalcement(displacement) # unit measures to image domain measures
+    displacement = al.transformation.utils.unit_displacement_to_displacement(displacement) # unit measures to image domain measures
     displacement = al.create_displacement_image_from_image(displacement, m_image)
 
     end = time.time()
