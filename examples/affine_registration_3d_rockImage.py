@@ -24,6 +24,56 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import airlab as al
 
 import GPUtil
+import numpy as np
+
+# using some codes in rock_image repo
+sys.path.append(os.path.expanduser("~/codes/PycharmProjects/rock_image"))
+import basic_src.basic as basic
+import basic_src.io_function as io_function
+import porosity_profile
+import calc_cov
+
+sync_dir = os.path.expanduser('~/Data/rock/Synchrotron')
+
+def read_image_array_to_tensor(scan_num, extent, device):
+    '''
+    read 3d rock images, then convert to torch tensor, then airlab image object
+    :param scan_num:
+    :param extent:   (z_min, z_max), (y_min, y_max), (x_min, x_max) = extent, e.g., [(800,1200),(125,825), (125,825)]
+    :return: airlab image
+    '''
+
+    pattern = "6.5_L5_%s*_3.41_/segment/*_sub_mask.tif"%str(scan_num).zfill(3)
+
+    # get image paths
+    img_paths = io_function.get_file_list_by_pattern(sync_dir,pattern)
+
+    # put the images in a sequence (from top to bottom)
+    img_paths = porosity_profile.sort_images(img_paths)
+
+    (z_min, z_max), (y_min, y_max), (x_min, x_max) = extent
+
+    voxels_3d = calc_cov.read_3D_image_voxels_disk_start_end(img_paths, z_min, z_max)
+
+
+    # crop
+    voxels_3d = voxels_3d[y_min:y_max, x_min:x_max,:]
+
+    # for test
+    print(voxels_3d.shape)
+    height, width, z_len = voxels_3d.shape
+
+    #TODO: do we need to?: the order of axis are flipped in order to follow the convention of numpy and torch
+
+    voxels_3d = voxels_3d.astype(np.float32)
+    # convert to the torch tensor
+    image = th.from_numpy(voxels_3d).to(device=device)
+
+    # tensor_image, image_size, image_spacing, image_origin
+    image_al = al.Image(image, [height, width, z_len], [1, 1, 1], [0, 0, 0])
+
+    return image_al
+
 
 def main():
     start = time.time()
@@ -39,21 +89,31 @@ def main():
     deviceIDs = GPUtil.getAvailable(order='first', limit=100, maxLoad=0.5,
                                     maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
     if len(deviceIDs) > 0:
+        basic.outputlogMessage("using the GPU (ID:%d) for computing"%deviceIDs[0])
         device = th.device("cuda:%d"%deviceIDs[0])
 
-    # create 3D image volume with two objects
-    object_shift = 10
+    fixed_image = read_image_array_to_tensor('46', [(800,900),(125,825), (125,825)], device)
 
-    fixed_image = th.zeros(64, 64, 64).to(device=device)
+    moving_image = read_image_array_to_tensor('47', [(800,900),(125,825), (125,825)], device)
 
-    fixed_image[16:32, 16:32, 16:32] = 1.0
-    fixed_image = al.Image(fixed_image, [64, 64, 64], [1, 1, 1], [0, 0, 0])
+    # # create 3D image volume with two objects
+    # object_shift = 10
+    #
+    # fixed_image = th.zeros(64, 64, 64).to(device=device)
+    #
+    # fixed_image[16:32, 16:32, 16:32] = 1.0
+    #
+    # # tensor_image, image_size, image_spacing, image_origin
+    # fixed_image = al.Image(fixed_image, [64, 64, 64], [1, 1, 1], [0, 0, 0])
+    #
+    # moving_image = th.zeros(64, 64, 64).to(device=device)
+    # moving_image[16 - object_shift:32 - object_shift, 16 - object_shift:32 - object_shift,
+    # 16 - object_shift:32 - object_shift] = 1.0
+    #
+    # moving_image = al.Image(moving_image, [64, 64, 64], [1, 1, 1], [0, 0, 0])
 
-    moving_image = th.zeros(64, 64, 64).to(device=device)
-    moving_image[16 - object_shift:32 - object_shift, 16 - object_shift:32 - object_shift,
-    16 - object_shift:32 - object_shift] = 1.0
 
-    moving_image = al.Image(moving_image, [64, 64, 64], [1, 1, 1], [0, 0, 0])
+
 
     # create pairwise registration object
     registration = al.PairwiseRegistration()
@@ -78,9 +138,9 @@ def main():
     # start the registration
     registration.start()
 
-    # set the intensities for the visualisation
-    fixed_image.image = 1 - fixed_image.image
-    moving_image.image = 1 - moving_image.image
+    # # set the intensities for the visualisation
+    # fixed_image.image = 1 - fixed_image.image
+    # moving_image.image = 1 - moving_image.image
 
     # warp the moving image with the final transformation result
     displacement = transformation.get_displacement()
@@ -98,20 +158,20 @@ def main():
     # sitk.WriteImage(moving_image.itk(), '/tmp/rigid_moving_image.vtk')
     # sitk.WriteImage(fixed_image.itk(), '/tmp/rigid_fixed_image.vtk')
 
-    # plot the results
-    plt.subplot(131)
-    plt.imshow(fixed_image.numpy()[16, :, :], cmap='gray')
-    plt.title('Fixed Image Slice')
+    # # plot the results
+    # plt.subplot(131)
+    # plt.imshow(fixed_image.numpy()[16, :, :], cmap='gray')
+    # plt.title('Fixed Image Slice')
+    #
+    # plt.subplot(132)
+    # plt.imshow(moving_image.numpy()[16, :, :], cmap='gray')
+    # plt.title('Moving Image Slice')
+    #
+    # plt.subplot(133)
+    # plt.imshow(warped_image.numpy()[16, :, :], cmap='gray')
+    # plt.title('Warped Moving Image Slice')
 
-    plt.subplot(132)
-    plt.imshow(moving_image.numpy()[16, :, :], cmap='gray')
-    plt.title('Moving Image Slice')
-
-    plt.subplot(133)
-    plt.imshow(warped_image.numpy()[16, :, :], cmap='gray')
-    plt.title('Warped Moving Image Slice')
-
-    plt.show()
+    # plt.show()
 
 if __name__ == '__main__':
     main()
