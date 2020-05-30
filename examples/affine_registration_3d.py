@@ -18,6 +18,7 @@ import time
 
 import matplotlib.pyplot as plt
 import torch as th
+import GPUtil
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -33,7 +34,11 @@ def main():
 
     # In order to use a GPU uncomment the following line. The number is the device index of the used GPU
     # Here, the GPU with the index 0 is used.
-    # device = th.device("cuda:0")
+    deviceIDs = GPUtil.getAvailable(order='first', limit=100, maxLoad=0.5,
+                                    maxMemory=0.5, includeNan=False, excludeID=[], excludeUUID=[])
+    if len(deviceIDs) > 0:
+        print("using the GPU (ID:%d) for computing"%deviceIDs[0])
+        device = th.device("cuda:%d"%deviceIDs[0])
 
     # create 3D image volume with two objects
     object_shift = 10
