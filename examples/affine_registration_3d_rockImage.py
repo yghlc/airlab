@@ -26,6 +26,8 @@ import airlab as al
 import GPUtil
 import numpy as np
 
+import SimpleITK as sitk
+
 # using some codes in rock_image repo
 sys.path.append(os.path.expanduser("~/codes/PycharmProjects/rock_image"))
 import basic_src.basic as basic
@@ -158,6 +160,10 @@ def main():
     # sitk.WriteImage(warped_image.itk(), '/tmp/rigid_warped_image.vtk')
     # sitk.WriteImage(moving_image.itk(), '/tmp/rigid_moving_image.vtk')
     # sitk.WriteImage(fixed_image.itk(), '/tmp/rigid_fixed_image.vtk')
+
+    displacement = al.transformation.utils.unit_displacement_to_displacement(displacement) # unit measures to image domain measures
+    displacement = al.create_displacement_image_from_image(displacement, moving_image)
+    sitk.WriteImage(displacement.itk(),'displacement' + '.vtk')
 
     # # plot the results
     # plt.subplot(131)
