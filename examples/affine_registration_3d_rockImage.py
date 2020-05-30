@@ -95,9 +95,9 @@ def main():
         basic.outputlogMessage("using the GPU (ID:%d) for computing"%deviceIDs[0])
         device = th.device("cuda:%d"%deviceIDs[0])
 
-    fixed_image = read_image_array_to_tensor('46', [(800,900),(125,825), (125,825)], device)
+    fixed_image = read_image_array_to_tensor('46', [(800,1500),(125,825), (125,825)], device)
 
-    moving_image = read_image_array_to_tensor('47', [(800,900),(125,825), (125,825)], device)
+    moving_image = read_image_array_to_tensor('47', [(800,1500),(125,825), (125,825)], device)
 
     # # create 3D image volume with two objects
     # object_shift = 10
