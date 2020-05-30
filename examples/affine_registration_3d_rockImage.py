@@ -43,7 +43,8 @@ def read_image_array_to_tensor(scan_num, extent, device):
     :return: airlab image
     '''
 
-    pattern = "6.5_L5_%s*_3.41_/segment/*_sub_mask.tif"%str(scan_num).zfill(3)
+    # pattern = "6.5_L5_%s*_3.41_/segment/*_sub_mask.tif"%str(scan_num).zfill(3)
+    pattern = "6.5_L5_%s*_3.41_/names_for_DIC/*.tif" % str(scan_num).zfill(3)
 
     # get image paths
     img_paths = io_function.get_file_list_by_pattern(sync_dir,pattern)
