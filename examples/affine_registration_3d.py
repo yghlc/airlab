@@ -23,6 +23,7 @@ import GPUtil
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import airlab as al
+import SimpleITK as sitk
 
 def main():
     start = time.time()
@@ -41,7 +42,7 @@ def main():
         device = th.device("cuda:%d"%deviceIDs[0])
 
     # create 3D image volume with two objects
-    object_shift = 10
+    object_shift = 5
 
     fixed_image = th.zeros(64, 64, 64).to(device=device)
     fixed_image[16:32, 16:32, 16:32] = 1.0
@@ -91,9 +92,13 @@ def main():
     print("Result parameters:")
     transformation.print()
 
-    # sitk.WriteImage(warped_image.itk(), '/tmp/rigid_warped_image.vtk')
-    # sitk.WriteImage(moving_image.itk(), '/tmp/rigid_moving_image.vtk')
-    # sitk.WriteImage(fixed_image.itk(), '/tmp/rigid_fixed_image.vtk')
+    sitk.WriteImage(warped_image.itk(), 'rigid_warped_image.vtk')
+    sitk.WriteImage(moving_image.itk(), 'rigid_moving_image.vtk')
+    sitk.WriteImage(fixed_image.itk(), 'rigid_fixed_image.vtk')
+
+    displacement = al.transformation.utils.unit_displacement_to_displacement(displacement) # unit measures to image domain measures
+    displacement = al.create_displacement_image_from_image(displacement, moving_image)
+    sitk.WriteImage(displacement.itk(),'displacement' + '.vtk')
 
     # plot the results
     plt.subplot(131)
