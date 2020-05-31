@@ -95,10 +95,15 @@ def main():
         basic.outputlogMessage("using the GPU (ID:%d) for computing"%deviceIDs[0])
         device = th.device("cuda:%d"%deviceIDs[0])
 
+    ref_scan = '46'
+    new_scan = '47'
+    z_min = 800
+    z_max = 900
+    method = "ncc"      # "mse
     # due to the limit of one GPU memory, limit the z length to 200.
-    fixed_image = read_image_array_to_tensor('46', [(800,1000),(125,825), (125,825)], device)
+    fixed_image = read_image_array_to_tensor(ref_scan, [(z_min,z_max),(125,825), (125,825)], device)
 
-    moving_image = read_image_array_to_tensor('47', [(800,1000),(125,825), (125,825)], device)
+    moving_image = read_image_array_to_tensor(new_scan, [(z_min,z_max),(125,825), (125,825)], device)
 
     # # create 3D image volume with two objects
     # object_shift = 10
@@ -129,7 +134,12 @@ def main():
     registration.set_transformation(transformation)
 
     # choose the Mean Squared Error as image loss
-    image_loss = al.loss.pairwise.MSE(fixed_image, moving_image)
+    if method == 'mse':
+        image_loss = al.loss.pairwise.MSE(fixed_image, moving_image)
+    elif method == 'ncc':
+        image_loss = al.loss.pairwise.NCC(fixed_image, moving_image)
+    else:
+        raise ValueError("unknown method")
 
     registration.set_image_loss([image_loss])
 
@@ -164,6 +174,7 @@ def main():
 
     displacement = al.transformation.utils.unit_displacement_to_displacement(displacement) # unit measures to image domain measures
     displacement = al.create_displacement_image_from_image(displacement, moving_image)
+    save_disp = "displacement_scan%s_%s_Z%d_%d_M%s"%(ref_scan,new_scan,z_min,z_max,method)
     sitk.WriteImage(displacement.itk(),'displacement' + '.vtk')
 
     # # plot the results
