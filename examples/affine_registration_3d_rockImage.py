@@ -95,7 +95,7 @@ def main():
         basic.outputlogMessage("using the GPU (ID:%d) for computing"%deviceIDs[0])
         device = th.device("cuda:%d"%deviceIDs[0])
 
-    # due to the limit of one GPU memory,
+    # due to the limit of one GPU memory, limit the z length to 200.
     fixed_image = read_image_array_to_tensor('46', [(800,1000),(125,825), (125,825)], device)
 
     moving_image = read_image_array_to_tensor('47', [(800,1000),(125,825), (125,825)], device)
