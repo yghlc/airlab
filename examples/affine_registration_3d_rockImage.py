@@ -175,7 +175,7 @@ def main():
     displacement = al.transformation.utils.unit_displacement_to_displacement(displacement) # unit measures to image domain measures
     displacement = al.create_displacement_image_from_image(displacement, moving_image)
     save_disp = "displacement_scan%s_%s_Z%d_%d_M%s"%(ref_scan,new_scan,z_min,z_max,method)
-    sitk.WriteImage(displacement.itk(),'displacement' + '.vtk')
+    sitk.WriteImage(displacement.itk(), save_disp + '.vtk')
 
     # # plot the results
     # plt.subplot(131)
